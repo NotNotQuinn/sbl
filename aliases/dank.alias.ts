@@ -1,0 +1,4 @@
+(() => {
+	if (SUPIBOT)
+		customData.save();
+})();
