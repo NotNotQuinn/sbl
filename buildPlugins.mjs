@@ -71,6 +71,13 @@ let typecheckPlugin = (name) => ({
 	name: 'supibot-typescript-typecheck',
 	setup(build) {
 		build.onResolve({ filter: /\.ts$/ }, async (args) => {
+			if (options["skip-type-check"]) {
+				let now = new Date();
+				let currentTimeString = now.toLocaleTimeString('en', { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) + "." + ("000" + now.valueOf() % 1000).slice(-3);
+				console.log(`[ ${flagString} ] ${currentTimeString} ${name} type check \u001b[33mskipped\u001b[39m`);
+				return;
+			}
+
 			let fileTimes = {};
 			let now = new Date();
 			let path = "./" + filepath.relative(".", args.path).replaceAll("\\", "/");

@@ -27,6 +27,10 @@ const cliOptionsWithHelp = {
 			alias: 'm',
 			default: false
 		},
+		'skip-type-check': {
+			help: 'Do not run the type checker (tsc).',
+			default: true
+		},
 		'help': {
 			help: 'Show this help text.',
 			alias: 'h',
