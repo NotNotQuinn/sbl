@@ -29,7 +29,7 @@ const cliOptionsWithHelp = {
 		},
 		'skip-type-check': {
 			help: 'Do not run the type checker (tsc).',
-			default: true
+			default: false
 		},
 		'help': {
 			help: 'Show this help text.',

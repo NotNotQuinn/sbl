@@ -143,38 +143,64 @@ function escapeRegExp(string) {
  * 		targetLineTag?: string;
  * 		injectTo?: "top" | "bottom" | "wrap" | "file"
  * 		injectContent: string;
- * 		injectContent: string;
+ * 		injectContentFile: string;
  * 		loader?: esbuild.Loader;
  * 	}} options Options
- * @param {RegExp} options.filter File to inject into
+ * @param {RegExp} options.filter Regex to match a filename to inject into. All matching files will be injected.
  * @param {string} [options.targetLineTag] The line to replace
  * @param {"top" | "bottom" | "wrap" | "file"} [options.injectTo] If "top" or "bottom", `options.targetLineTag` is ignored.
- * @param {string} options.injectContent File to inject into
+ * @param {string} options.injectContent The content to inject into the file.
+ * @param {string} options.injectContentFile Ignore `injectContent` and use this file's content instead.
  * @param {esbuild.Loader} [options.loader] Specify a loader to use (content-type).
  * @returns {esbuild.Plugin} esbuild plugin
  */
-let injectReplacementContent = ({ filter, targetLineTag, injectContent, injectTo = "file", loader }) => ({
+let injectReplacementContent = ({ filter, targetLineTag, injectContent, injectContentFile, injectTo = "file", loader }) => ({
 	name: 'inject-replacement-content',
 	setup(build) {
+		// Idea: refactor to use getContent function or similar, so there is less repeated code.
 		if (injectTo === "wrap")
 			build.onLoad({ filter }, async (args) => {
+				let watchFiles;
+				if (typeof injectContentFile === "string") {
+					watchFiles = [injectContentFile]
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+				}
+
 				let contents = injectContent.replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), (await fs.promises.readFile(args.path)).toString());
-				return { contents, loader };
+				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "file")
 			build.onLoad({ filter }, async (args) => {
+				let watchFiles;
+				if (typeof injectContentFile === "string") {
+					watchFiles = [injectContentFile]
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+				}
+
 				let contents = (await fs.promises.readFile(args.path)).toString().replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), injectContent);
-				return { contents, loader };
+				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "top")
 			build.onLoad({ filter }, async (args) => {
+				let watchFiles;
+				if (typeof injectContentFile === "string") {
+					watchFiles = [injectContentFile]
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+				}
+
 				let contents = injectContent + (await fs.promises.readFile(args.path)).toString();
-				return { contents, loader };
+				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "bottom")
 			build.onLoad({ filter }, async (args) => {
+				let watchFiles;
+				if (typeof injectContentFile === "string") {
+					watchFiles = [injectContentFile]
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+				}
+
 				let contents = (await fs.promises.readFile(args.path)).toString() + injectContent;
-				return { contents, loader };
+				return { contents, loader, watchFiles };
 			});
 		else throw new Error("injectTo has invalid value on injectReplacementContent:", injectTo);
 	}

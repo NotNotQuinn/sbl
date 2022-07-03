@@ -25,7 +25,10 @@ let buildOptions = {
 	logLevel: 'warning',
 	outdir: "build",
 	treeShaking: true,
-	target: "es2021"
+	target: "es2021",
+	outExtension: {
+		'.js': '.mjs'
+	}
 };
 
 let waitGroup = [];
@@ -50,6 +53,7 @@ if (options.supibot) {
 }
 
 if (options.node) {
+	let nodeLogName = `\u001b[32m${"node"}\u001b[39m`
 	waitGroup.push(esbuild.build({
 		...buildOptions,
 		define: {
@@ -60,11 +64,11 @@ if (options.node) {
 		platform: "node",
 		entryNames: "[dir]/[name].node",
 		plugins: [
-			loggingPlugin(`\u001b[32m${"node"}\u001b[39m`),
-			typecheckPlugin(`\u001b[32m${"node"}\u001b[39m`),
+			loggingPlugin(nodeLogName),
+			typecheckPlugin(nodeLogName),
 			injectReplacementContent({
 				filter: /\.alias\.ts$/i,
-				injectContent: ``,
+				injectContentFile: 'lib/node-alias-wrapper.js',
 				targetLineTag: '@wrap-here',
 				injectTo: 'wrap',
 				loader: "ts",

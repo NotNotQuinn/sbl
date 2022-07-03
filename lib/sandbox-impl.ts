@@ -566,7 +566,16 @@ export namespace __SBLJS {
 			customData: new SupibotStoreImpl('.tmp.customData.json'),
 			channelCustomData: new SupibotStoreImpl('.tmp.channelCustomData.json'),
 		},
-		finalReturn: undefined,
+		result: undefined,
+		// TODO
+		// cliOptions: getopts({
+		// 	boolean
+		// }),
+		end() {
+			// this.initialValues.customData.save();
+			// this.initialValues.channelCustomData.save();
+			console.log(this.result)
+		}
 	};
 }
 
