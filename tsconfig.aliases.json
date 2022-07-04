@@ -1,9 +1,10 @@
 {
 	"compilerOptions": {
-		"target": "ES2022",
-		"module": "node16",
+		"target": "ES2021",
+		"module": "CommonJS",
 		"moduleResolution": "Node16",
 		"resolveJsonModule": true,
+		"noEmit": true,
 		"importHelpers": true,
 		"importsNotUsedAsValues": "remove",
 		"newLine": "lf",
@@ -14,12 +15,9 @@
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitAny": true,
 		"noImplicitReturns": true,
-		"noImplicitOverride": true,
-		"esModuleInterop": true,
-		"skipLibCheck": true,
-		"allowSyntheticDefaultImports": true,
-		"outDir": "./dist"
+		"noImplicitOverride": true
 	},
-	"exclude": ["./node_modules/", "./aliases", "./lib"]
+	"include": ["./aliases", "./lib", "./util"],
+	"exclude": ["./node_modules"]
 }
 // Here so vscode actually loads all of the typescript files, without having them open (and doesnt complain about missing declarations)

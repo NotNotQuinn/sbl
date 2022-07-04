@@ -1,11 +1,10 @@
-import * as filepath from 'path';
-import * as esbuild from 'esbuild';
-import * as fs from 'fs';
-import * as child_process from 'child_process';
+import filepath from 'path';
+import esbuild from 'esbuild';
+import fs from 'fs';
+import child_process from 'child_process';
 import { options } from './argIntake.mjs';
 
-/** @type {Record<string, boolean>} */
-let flags = {
+let flags: Record<string, boolean> = {
 	ONCE: !options.watch,
 	WATCH: options.watch,
 	MINIFY: options.minify
@@ -24,16 +23,16 @@ let flagString = Object.entries(flags)
  * @param {string} name Name to use in logging
  * @returns {esbuild.Plugin} esbuild plugin
  */
-let loggingPlugin = (name) => ({
+let loggingPlugin = (name: string): esbuild.Plugin => ({
 	name: 'supibot-typescript',
 	setup(build) {
-		/** @type {Record<string, { [key: string]: any }>} */
-		let fileTimes = {};
+		let fileTimes: Record<string, { started?: Date; }> = {};
 		build.initialOptions.metafile = true;
 		build.onLoad({ filter: /.*/ }, ({ path }) => {
 			path = "./" + filepath.relative(".", path).replaceAll("\\", "/");
 			fileTimes[path] ??= {};
 			fileTimes[path].started = new Date();
+			return undefined;
 		});
 
 		build.onEnd(result => {
@@ -51,11 +50,11 @@ let loggingPlugin = (name) => ({
 				return;
 			}
 
-			let completedFiles = Object.keys(result.metafile.inputs)
+			let completedFiles = Object.keys(result!.metafile!.inputs)
 				.map(path => "./" + filepath.relative('.', path).replaceAll("\\", "/"));
 
 			completedFiles.forEach(path => {
-				let timeString = `${now - fileTimes[path]?.started}ms`;
+				let timeString = `${now.valueOf() - fileTimes[path].started!.valueOf()}ms`;
 				console.log(`[ ${flagString} ] ${currentTimeString} ${name} build \u001b[92mfinished\u001b[39m in ${timeString}: ${path}`);
 			});
 		});
@@ -67,7 +66,7 @@ let loggingPlugin = (name) => ({
  * @param {string} name Name to use in logging
  * @returns {esbuild.Plugin} esbuild plugin
  */
-let typecheckPlugin = (name) => ({
+let typecheckPlugin = (name: string): esbuild.Plugin => ({
 	name: 'supibot-typescript-typecheck',
 	setup(build) {
 		build.onResolve({ filter: /\.ts$/ }, async (args) => {
@@ -78,7 +77,7 @@ let typecheckPlugin = (name) => ({
 				return;
 			}
 
-			let fileTimes = {};
+			let fileTimes: Record<string, { started?: Date; }> = {};
 			let now = new Date();
 			let path = "./" + filepath.relative(".", args.path).replaceAll("\\", "/");
 			fileTimes[path] ??= {};
@@ -87,7 +86,8 @@ let typecheckPlugin = (name) => ({
 			console.log(`[ ${flagString} ] ${currentTimeString} ${name} type check \u001b[35mstarted\u001b[39m: ${path}`);
 
 			let tscArgs = [
-				"--target", "ES2021",
+				"--target", "ES2022",
+				"--module", "node16",
 				"--moduleResolution", "Node16",
 				"--resolveJsonModule",
 				"--noEmit",
@@ -102,11 +102,11 @@ let typecheckPlugin = (name) => ({
 				"--noImplicitAny",
 				"--noImplicitReturns",
 				"--noImplicitOverride",
-				"--pretty",
+				"--skipLibCheck",
 			];
 			let commonAliasSandboxFiles = ["lib/sandbox.d.ts", "lib/common.injected.d.ts"];
 			let supibotAliasSandboxFiles = [...commonAliasSandboxFiles];
-			let nodeAliasSandboxFiles = [...commonAliasSandboxFiles, "lib/sandbox-impl.ts"];
+			let nodeAliasSandboxFiles = [...commonAliasSandboxFiles, "util/module-shims.d.ts", "lib/sandbox-impl.ts"];
 			let aliasSandboxFiles = name.includes("supibot") ? supibotAliasSandboxFiles : nodeAliasSandboxFiles;
 
 			new Promise(() => {
@@ -122,7 +122,7 @@ let typecheckPlugin = (name) => ({
 					} else {
 						passfail = `\u001b[92m${'passed'}\u001b[39m`;
 					};
-					let timeString = `${now - fileTimes[path]?.started}ms`;
+					let timeString = `${now.valueOf() - fileTimes[path].started!.valueOf()}ms`;
 					console.log(`[ ${flagString} ] ${currentTimeString} ${name} type check ${passfail} in ${timeString}: ${path}`);
 				});
 			});
@@ -132,77 +132,80 @@ let typecheckPlugin = (name) => ({
 });
 
 // https://stackoverflow.com/questions/3446170/ddg#6969486
-function escapeRegExp(string) {
+function escapeRegExp(string: string) {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 /**
  * Create a new replacement plugin. When loading specific files, replaces the first instance of a line containing a tag with different content.
- * @param {{
- * 		filter: RegExp;
- * 		targetLineTag?: string;
- * 		injectTo?: "top" | "bottom" | "wrap" | "file"
- * 		injectContent: string;
- * 		injectContentFile: string;
- * 		loader?: esbuild.Loader;
- * 	}} options Options
+ * @param {object} options Options
  * @param {RegExp} options.filter Regex to match a filename to inject into. All matching files will be injected.
  * @param {string} [options.targetLineTag] The line to replace
  * @param {"top" | "bottom" | "wrap" | "file"} [options.injectTo] If "top" or "bottom", `options.targetLineTag` is ignored.
- * @param {string} options.injectContent The content to inject into the file.
- * @param {string} options.injectContentFile Ignore `injectContent` and use this file's content instead.
+ * @param {string} [options.injectContent] The content to inject into the file.
+ * @param {string} [options.injectContentFile] Ignore `injectContent` and use this file's content instead.
  * @param {esbuild.Loader} [options.loader] Specify a loader to use (content-type).
  * @returns {esbuild.Plugin} esbuild plugin
  */
-let injectReplacementContent = ({ filter, targetLineTag, injectContent, injectContentFile, injectTo = "file", loader }) => ({
+let injectReplacementContent = ({ filter, targetLineTag, injectContent, injectContentFile, injectTo = "file", loader }: {
+	filter: RegExp;
+	targetLineTag: string;
+	injectTo: "file" | "wrap" | "top" | "bottom";
+	loader: esbuild.Loader;
+} & ({
+	injectContent: string;
+	injectContentFile?: undefined;
+} | {
+	injectContent?: undefined;
+	injectContentFile: string;
+})): esbuild.Plugin => ({
 	name: 'inject-replacement-content',
 	setup(build) {
 		// Idea: refactor to use getContent function or similar, so there is less repeated code.
 		if (injectTo === "wrap")
 			build.onLoad({ filter }, async (args) => {
-				let watchFiles;
+				let watchFiles: string[] = [];
 				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile]
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+					watchFiles = [injectContentFile];
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
 				}
 
-				let contents = injectContent.replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), (await fs.promises.readFile(args.path)).toString());
+				let contents = injectContent!.replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), (await fs.promises.readFile(args.path)).toString());
 				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "file")
 			build.onLoad({ filter }, async (args) => {
-				let watchFiles;
+				let watchFiles: string[] = [];
 				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile]
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+					watchFiles = [injectContentFile];
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
 				}
 
-				let contents = (await fs.promises.readFile(args.path)).toString().replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), injectContent);
+				let contents = (await fs.promises.readFile(args.path)).toString().replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), injectContent!);
 				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "top")
 			build.onLoad({ filter }, async (args) => {
-				let watchFiles;
+				let watchFiles: string[] = [];
 				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile]
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+					watchFiles = [injectContentFile];
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
 				}
 
-				let contents = injectContent + (await fs.promises.readFile(args.path)).toString();
+				let contents = injectContent! + (await fs.promises.readFile(args.path)).toString();
 				return { contents, loader, watchFiles };
 			});
 		else if (injectTo === "bottom")
 			build.onLoad({ filter }, async (args) => {
-				let watchFiles;
+				let watchFiles: string[] = [];
 				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile]
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString()
+					watchFiles = [injectContentFile];
+					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
 				}
 
-				let contents = (await fs.promises.readFile(args.path)).toString() + injectContent;
+				let contents = (await fs.promises.readFile(args.path)).toString() + injectContent!;
 				return { contents, loader, watchFiles };
 			});
-		else throw new Error("injectTo has invalid value on injectReplacementContent:", injectTo);
 	}
 });
 

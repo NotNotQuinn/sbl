@@ -11,14 +11,14 @@ if (options.help) {
 if (!options.node && !options.supibot) {
 	console.log(helpText);
 	console.error("Error: At least one of `--node' and `--supibot' must be specified");
-	process.exitCode = 1;
+	process.exit(1);
 }
 
 let aliasesDir = "aliases";
 let entryPoints = fs.readdirSync(aliasesDir).map(i => `${aliasesDir}/${i}`);
 
 /** @type {esbuild.BuildOptions} */
-let buildOptions = {
+let buildOptions: esbuild.BuildOptions = {
 	watch: options.watch,
 	minify: options.minify,
 	entryPoints,
@@ -53,7 +53,7 @@ if (options.supibot) {
 }
 
 if (options.node) {
-	let nodeLogName = `\u001b[32m${"node"}\u001b[39m`
+	let nodeLogName = `\u001b[32m${"node"}\u001b[39m`;
 	waitGroup.push(esbuild.build({
 		...buildOptions,
 		define: {

@@ -2,7 +2,7 @@
 	"name": "sbl",
 	"version": "1.0.0",
 	"description": "",
-	"main": "build.mjs",
+	"main": "dist/build.mjs",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "node . --node --minify",
@@ -14,12 +14,14 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@types/node": "^18.0.0"
+		"@types/node": "^18.0.0",
+		"tslib": "^2.4.0"
 	},
 	"dependencies": {
 		"esbuild": "^0.14.47",
-		"random-js": "^2.1.0",
 		"getopts": "^2.3.0",
+		"random-js": "^2.1.0",
+		"supi-core": "github:supinic/supi-core",
 		"typescript": "^4.7.4"
 	}
 }
