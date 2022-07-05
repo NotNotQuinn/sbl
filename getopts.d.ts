@@ -1,5 +1,3 @@
-declare module 'supi-core/classes/command' { };
-declare module 'supi-core/singletons/utils' { }
 declare module 'getopts' {
 	/**
  * @param argv Arguments to parse.

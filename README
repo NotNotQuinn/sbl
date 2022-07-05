@@ -1,18 +1,14 @@
 
-	$ node . --help
-	sbljs: Compile JavaScript meant to run on supibot for NodeJS, or minify it for Supibot environments.
+	sbljs: Minify & bundle JavaScript meant to run on supibot.
 	booleans:
-			--node -n   (default: false)
-					Compile for a NodeJS environment.
-
-			--supibot -s   (default: false)
-					Compile for a Supibot environment.
-
 			--watch -w   (default: false)
 					Compile on file changes.
 
 			--minify -m   (default: false)
 					Minify the output.
+
+			--skip-type-check   (default: false)
+					Do not run the type checker (tsc).
 
 			--help -h   (default: false)
 					Show this help text.

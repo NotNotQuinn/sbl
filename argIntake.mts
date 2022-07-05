@@ -1,24 +1,69 @@
 
-import getopts from "getopts";
-import { optionsWithHelp } from "./util/getCliOptions.mjs";
-import getCliOptions from "./util/getCliOptions.mjs";
+import getopts from 'getopts';
+
+type optionsWithHelp = {
+	description: string;
+	string?: Record<string, {
+		help?: string;
+		alias?: string | string[];
+		default?: any;
+		type: "string" | "array";
+	}>;
+	boolean?: Record<string, {
+		help?: string;
+		alias?: string | string[];
+		default?: any;
+	}>;
+	unknown?: (optionName: string) => boolean;
+};
+
+/**
+ * dank
+ */
+function getCliOptions(optionsWithHelp: optionsWithHelp): { cliOpts: getopts.Options; helpText: string; } {
+	let cliOpts: getopts.Options = { unknown: optionsWithHelp.unknown ?? (() => false) };
+	let helpText = optionsWithHelp.description + '\n';
+
+	const types: ['string', 'boolean'] = ['string', 'boolean'];
+	types.forEach(type => {
+		let section = optionsWithHelp[type] ?? {};
+		Object.entries(section).forEach(([option, { help, alias, default: d_fault }], i) => {
+			if (i === 0) helpText += `${type}s:\n`;
+			helpText += `\t${option.length === 1 ? '-' + option : '--' + option}`;
+
+			cliOpts[type] ??= [];
+			// @ts-ignore
+			cliOpts[type].push(option);
+			if (typeof alias !== "undefined") {
+				if (!Array.isArray(alias) && typeof alias === "string") {
+					alias = [alias];
+				}
+				alias.forEach(alias => {
+					helpText += " " + (alias.length === 1 ? '-' + alias : '--' + alias);
+				});
+
+				cliOpts["alias"] ??= {};
+				cliOpts.alias[option] = alias;
+			}
+			if (typeof d_fault !== "undefined") {
+				helpText += "   (default: " + d_fault + ")";
+				cliOpts["default"] ??= {};
+				cliOpts.default[option] = d_fault;
+			}
+			helpText += '\n';
+			helpText += "\t\t" + help + "\n\n";
+		});
+	});
+
+	return { cliOpts, helpText };
+}
 
 /**
  * @type {optionsWithHelp}
  */
 const cliOptionsWithHelp: optionsWithHelp = {
-	description: "sbljs: Compile JavaScript meant to run on supibot for NodeJS, or minify it for Supibot environments.",
+	description: "sbljs: Minify & bundle JavaScript meant to run on supibot.",
 	boolean: {
-		'node': {
-			help: 'Compile for a NodeJS environment.',
-			alias: 'n',
-			default: false
-		},
-		'supibot': {
-			help: 'Compile for a Supibot environment.',
-			alias: 's',
-			default: false
-		},
 		'watch': {
 			help: 'Compile on file changes.',
 			alias: 'w',

@@ -17,7 +17,7 @@
 		"noImplicitReturns": true,
 		"noImplicitOverride": true
 	},
-	"include": ["./aliases", "./lib", "./util"],
+	"include": ["./aliases", "./lib"],
 	"exclude": ["./node_modules"]
 }
 // Here so vscode actually loads all of the typescript files, without having them open (and doesnt complain about missing declarations)

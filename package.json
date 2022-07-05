@@ -5,10 +5,9 @@
 	"main": "dist/build.mjs",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"build": "node . --node --minify",
-		"build:supibot": "node . --minify --supibot",
-		"watch": "node . --node --watch",
-		"watch:supibot": "node . --watch --supibot"
+		"build": "node .",
+		"build:minify": "node . --minify",
+		"watch": "node . --watch"
 	},
 	"keywords": [],
 	"author": "",

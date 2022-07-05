@@ -24,7 +24,7 @@ let flagString = Object.entries(flags)
  * @returns {esbuild.Plugin} esbuild plugin
  */
 let loggingPlugin = (name: string): esbuild.Plugin => ({
-	name: 'supibot-typescript',
+	name: 'build-time-logging',
 	setup(build) {
 		let fileTimes: Record<string, { started?: Date; }> = {};
 		build.initialOptions.metafile = true;
@@ -102,12 +102,8 @@ let typecheckPlugin = (name: string): esbuild.Plugin => ({
 				"--noImplicitAny",
 				"--noImplicitReturns",
 				"--noImplicitOverride",
-				"--skipLibCheck",
 			];
-			let commonAliasSandboxFiles = ["lib/sandbox.d.ts", "lib/common.injected.d.ts"];
-			let supibotAliasSandboxFiles = [...commonAliasSandboxFiles];
-			let nodeAliasSandboxFiles = [...commonAliasSandboxFiles, "util/module-shims.d.ts", "lib/sandbox-impl.ts"];
-			let aliasSandboxFiles = name.includes("supibot") ? supibotAliasSandboxFiles : nodeAliasSandboxFiles;
+			let aliasSandboxFiles = ["lib/sandbox.d.ts"];
 
 			new Promise(() => {
 				let tsc = child_process.spawn("node", ["node_modules/typescript/lib/tsc.js", ...tscArgs, ...(path.endsWith(".alias.ts") ? aliasSandboxFiles : []), path]);
@@ -131,82 +127,4 @@ let typecheckPlugin = (name: string): esbuild.Plugin => ({
 	}
 });
 
-// https://stackoverflow.com/questions/3446170/ddg#6969486
-function escapeRegExp(string: string) {
-	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
-
-/**
- * Create a new replacement plugin. When loading specific files, replaces the first instance of a line containing a tag with different content.
- * @param {object} options Options
- * @param {RegExp} options.filter Regex to match a filename to inject into. All matching files will be injected.
- * @param {string} [options.targetLineTag] The line to replace
- * @param {"top" | "bottom" | "wrap" | "file"} [options.injectTo] If "top" or "bottom", `options.targetLineTag` is ignored.
- * @param {string} [options.injectContent] The content to inject into the file.
- * @param {string} [options.injectContentFile] Ignore `injectContent` and use this file's content instead.
- * @param {esbuild.Loader} [options.loader] Specify a loader to use (content-type).
- * @returns {esbuild.Plugin} esbuild plugin
- */
-let injectReplacementContent = ({ filter, targetLineTag, injectContent, injectContentFile, injectTo = "file", loader }: {
-	filter: RegExp;
-	targetLineTag: string;
-	injectTo: "file" | "wrap" | "top" | "bottom";
-	loader: esbuild.Loader;
-} & ({
-	injectContent: string;
-	injectContentFile?: undefined;
-} | {
-	injectContent?: undefined;
-	injectContentFile: string;
-})): esbuild.Plugin => ({
-	name: 'inject-replacement-content',
-	setup(build) {
-		// Idea: refactor to use getContent function or similar, so there is less repeated code.
-		if (injectTo === "wrap")
-			build.onLoad({ filter }, async (args) => {
-				let watchFiles: string[] = [];
-				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile];
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
-				}
-
-				let contents = injectContent!.replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), (await fs.promises.readFile(args.path)).toString());
-				return { contents, loader, watchFiles };
-			});
-		else if (injectTo === "file")
-			build.onLoad({ filter }, async (args) => {
-				let watchFiles: string[] = [];
-				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile];
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
-				}
-
-				let contents = (await fs.promises.readFile(args.path)).toString().replace(new RegExp(`^.*${escapeRegExp(targetLineTag)}.*$`, "m"), injectContent!);
-				return { contents, loader, watchFiles };
-			});
-		else if (injectTo === "top")
-			build.onLoad({ filter }, async (args) => {
-				let watchFiles: string[] = [];
-				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile];
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
-				}
-
-				let contents = injectContent! + (await fs.promises.readFile(args.path)).toString();
-				return { contents, loader, watchFiles };
-			});
-		else if (injectTo === "bottom")
-			build.onLoad({ filter }, async (args) => {
-				let watchFiles: string[] = [];
-				if (typeof injectContentFile === "string") {
-					watchFiles = [injectContentFile];
-					injectContent = (await fs.promises.readFile(injectContentFile)).toString();
-				}
-
-				let contents = (await fs.promises.readFile(args.path)).toString() + injectContent!;
-				return { contents, loader, watchFiles };
-			});
-	}
-});
-
-export { loggingPlugin, typecheckPlugin, injectReplacementContent };
+export { loggingPlugin, typecheckPlugin };
