@@ -1,4 +1,5 @@
 node_modules/
+/sblc/target/
 /sbljs/build/
 /sbljs/dist/
 .tmp.*
