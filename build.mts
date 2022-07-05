@@ -14,7 +14,7 @@ let entryPoints = fs.readdirSync(aliasesDir).map(i => `${aliasesDir}/${i}`);
 
 let logName = `\u001b[36m${'supibot'}\u001b[39m`;
 try {
-	esbuild.build({
+	await esbuild.build({
 		drop: ["console"],
 		bundle: true,
 		target: "es2021",
