@@ -102,6 +102,7 @@ let typecheckPlugin = (name: string): esbuild.Plugin => ({
 				"--noImplicitAny",
 				"--noImplicitReturns",
 				"--noImplicitOverride",
+				"--skipLibCheck",
 			];
 			let aliasSandboxFiles = ["lib/sandbox.d.ts"];
 
