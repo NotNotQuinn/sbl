@@ -8,7 +8,6 @@ import { readFileSync, writeFileSync } from 'fs';
 import type { Parameter } from 'supi-core/@types/classes/command';
 import type { JSONifiable, Emote } from 'supi-core/@types/globals';
 import sbInit, { GlobalSbObject } from 'supi-core';
-import * as getopts from 'getopts';
 
 let Command: GlobalSbObject["Command"], Utils: GlobalSbObject["Utils"];
 
